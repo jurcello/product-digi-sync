@@ -1,11 +1,7 @@
-# -*- coding: utf-8 -*-
 {
-    'name': "product_digi_sync",
-
-    'summary': """
-        Short (1 phrase/line) summary of the module's purpose, used as
-        subtitle on modules listing or apps.openerp.com""",
-
+    "name": "product_digi_sync",
+    "summary": """
+        Allows for syncing products to Digi using the @Fresh api""",
     "author": "Gedeelde Weelde",
     "license": "AGPL-3",
     "website": "https://www.yourcompany.com",
@@ -14,14 +10,8 @@
     # for the full list
     "category": "Sales/Point of Sale",
     "version": "16.0.0.0.1",
-    'data': [
-    ],
-
+    "data": [],
     # any module necessary for this one to work correctly
-    'depends': [
-        'product_food_fields',
-        'product',
-        'point_of_sale'
-    ],
-    'installable': True,
+    "depends": ["product_food_fields", "product", "point_of_sale"],
+    "installable": True,
 }
