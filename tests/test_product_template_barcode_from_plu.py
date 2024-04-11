@@ -8,9 +8,15 @@ class ProductTemplateBarcodeFromPluTestCase(TransactionCase):
             [("name", "=", "Price Barcodes 2 Decimals")]
         )
 
+        product_category = self.env["product.category"].create(
+            {
+                "name": "Test Product Category",
+                "barcode_rule_id": barcode_rule.id,
+            }
+        )
         # Test case code here
         product_template = self.env["product.template"].create(
-            {"name": "dummy_name", "plu_code": 100, "barcode_rule_id": barcode_rule.id}
+            {"name": "dummy_name", "plu_code": 100, "categ_id": product_category.id}
         )
 
         self.assertEqual(product_template.barcode, "2300100000008")
