@@ -8,6 +8,7 @@
         <field name="arch" type="xml">
             <field name="barcode" position="after">
                 <field name="plu_code" />
+                <field name="barcode_rule_id" />
             </field>
         </field>
     </record>
