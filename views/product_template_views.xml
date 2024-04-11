@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo>
     <record id="digi_sync_product_template_view_form" model="ir.ui.view">
-        <field name="name">digi_sync_product.product.template</field>
+        <field name="name">product_digi_sync.product.template</field>
         <field name="model">product.template</field>
         <field name="priority" eval="2" />
         <field name="inherit_id" ref="product.product_template_only_form_view" />
         <field name="arch" type="xml">
             <field name="barcode" position="after">
                 <field name="plu_code" />
-                <field name="barcode_rule_id" />
             </field>
         </field>
     </record>

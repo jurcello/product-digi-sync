@@ -8,7 +8,6 @@ class ProductTemplate(models.Model):
     _inherit = "product.template"
 
     plu_code = fields.Integer(string="Plu code", required=False)
-    barcode_rule_id = fields.Many2one("barcode.rule", string="Barcode Rule")
 
     @api.depends("plu_code")
     def _compute_barcode(self):

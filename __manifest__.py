@@ -10,7 +10,7 @@
     # for the full list
     "category": "Sales/Point of Sale",
     "version": "16.0.0.0.1",
-    "data": ["views/product_template_views.xml"],
+    "data": ["views/product_template_views.xml", "views/product_category_views.xml"],
     # any module necessary for this one to work correctly
     "depends": ["product_food_fields", "product", "point_of_sale"],
     "installable": True,

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="digi_sync_product_category_view_form" model="ir.ui.view">
+        <field name="name">product_digi_sync.category.form</field>
+        <field name="model">product.category</field>
+        <field name="inherit_id" ref="product.product_category_form_view" />
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='first']" position="after">
+                <div class="barcode_rule">
+                    <label for="barcode_rule_id" string="Barcode rule" />
+                    <field name="barcode_rule_id" />1>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>
