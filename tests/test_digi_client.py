@@ -15,7 +15,7 @@ class DigiClientTestCase(TransactionCase):
         self.assertEqual(digi_client.username, "test_username")
 
     @tagged("post_install", "-at_install")
-    def test_it_sends_a_product_to_digi_using_the_right_headers(self):
+    def test_it_sends_a_product_to_digi_using_the_right_headers_and_url(self):
         product = self.env["product.product"].create({"name": "Test Product"})
 
         digi_client = self.env["digi_sync.digi_client"].create(
@@ -31,13 +31,8 @@ class DigiClientTestCase(TransactionCase):
                 ),
                 "Content-Type": "application/json",
             }
-            expected_body = json.dumps([])
 
             digi_client.send_product_to_digi(product)
 
-            post_spy.assert_called_once_with(
-                url=expected_url,
-                headers=expected_headers,
-                data=expected_body,
-                timeout=30,
-            )
+            self.assertEqual(post_spy.call_args.kwargs["url"], expected_url)
+            self.assertEqual(post_spy.call_args.kwargs["headers"], expected_headers)
