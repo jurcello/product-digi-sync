@@ -18,7 +18,8 @@ class ProductTemplate(models.Model):
             # Add barcode to vals
             self.barcode = self._prepare_barcode(pattern, self.plu_code, is_ean)
 
-    def _prepare_barcode(self, barcode_pattern, plu_code, is_ean13):
+    @staticmethod
+    def _prepare_barcode(barcode_pattern, plu_code, is_ean13):
         # Converting the code to a padded string
         code_str = str(plu_code)
         code_length = barcode_pattern.count(".")
