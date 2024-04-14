@@ -1,4 +1,8 @@
+import base64
+import io
 import json
+
+from PIL import Image
 
 
 class ProductTransformer:
@@ -22,3 +26,31 @@ class ProductTransformer:
         data["StatusFields"] = {"PiecesArticle": False}
 
         return json.dumps(data)
+
+    @classmethod
+    def transform_product_to_image_payload(cls, product):
+        image_name = product.name.lower().replace(" ", "_")
+        payload = {"DataId": product.plu_code}
+        image_data = base64.b64decode(product.image_1920)
+        image = Image.open(io.BytesIO(image_data))
+        image_format = image.format.lower()
+        payload["Links"] = [
+            {
+                "DataId": product.plu_code,
+                "LinkNumber": 1,
+                "Type": {
+                    "Description": "Article",
+                    "Id": 2,
+                },
+            }
+        ]
+        payload["OriginalInput"] = product.image_1920.decode("utf-8")
+        payload["Names"] = [
+            {
+                "DataId": 1,
+                "Reference": "Nederlands",
+                "Name": image_name,
+            }
+        ]
+        payload["InputFormat"] = image_format
+        return json.dumps(payload)

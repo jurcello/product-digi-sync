@@ -1,9 +1,6 @@
-import base64
-import io
 import json
 
 import requests
-from PIL import Image
 
 from odoo import fields, models
 
@@ -33,32 +30,9 @@ class DigiClient(models.Model):
     def send_product_image_to_digi(self, product):
         url = self.create_image_url()
 
-        image_name = product.name.lower().replace(" ", "_")
-        payload = {"DataId": product.plu_code}
-        image_data = base64.b64decode(product.image_1920)
-        image = Image.open(io.BytesIO(image_data))
-        image_format = image.format.lower()
-        payload["Links"] = [
-            {
-                "DataId": product.plu_code,
-                "LinkNumber": 1,
-                "Type": {
-                    "Description": "Article",
-                    "Id": 2,
-                },
-            }
-        ]
-        payload["OriginalInput"] = product.image_1920.decode("utf-8")
-        payload["Names"] = [
-            {
-                "DataId": 1,
-                "Reference": "Nederlands",
-                "Name": image_name,
-            }
-        ]
-        payload["InputFormat"] = image_format
+        body = ProductTransformer.transform_product_to_image_payload(product)
 
-        self._post_to_digi(url, json.dumps(payload))
+        self._post_to_digi(url, body)
 
     def _post_to_digi(self, url, body):
         headers = self.create_header()
