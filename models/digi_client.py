@@ -7,6 +7,10 @@ from odoo import fields, models
 from ..tools.product_transformer import ProductTransformer
 
 
+class DigiApiException(Exception):
+    pass
+
+
 class DigiClient(models.Model):
     _name = "digi_sync.digi_client"
     _description = "Digi Client"
@@ -22,9 +26,13 @@ class DigiClient(models.Model):
 
         body = ProductTransformer.transform_product_to_payload(product)
 
-        requests.post(
+        response = requests.post(
             url=url, headers=headers, data=body, timeout=30, allow_redirects=False
         )
+        response_json = json.loads(response.json())
+
+        if "Result" in response_json and response_json["Result"] == -99:
+            raise DigiApiException(response_json["ResultDescription"])
 
     def create_article_url(self):
         url = f"{self.FRESH_URL}/ARTICLE.SVC/POST"

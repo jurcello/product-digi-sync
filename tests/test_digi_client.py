@@ -1,33 +1,32 @@
 import json
+from json import JSONDecodeError
 from unittest.mock import patch
 
 from odoo.tests import TransactionCase, tagged
+
+from odoo.addons.product_digi_sync.models.digi_client import DigiApiException
 
 
 class DigiClientTestCase(TransactionCase):
     def setUp(self):
         super().setUp()
         self.maxDiff = None
-
-    @tagged("post_install", "-at_install")
-    def test_it_can_be_instantiated_with_username_and_password(self):
-        digi_client = self.env["digi_sync.digi_client"].create(
+        self.digi_client = self.env["digi_sync.digi_client"].create(
             {"username": "test_username", "password": "123"}
         )
 
-        self.assertEqual(digi_client.password, "123")
-        self.assertEqual(digi_client.username, "test_username")
+    @tagged("post_install", "-at_install")
+    def test_it_can_be_instantiated_with_username_and_password(self):
+        self.assertEqual(self.digi_client.password, "123")
+        self.assertEqual(self.digi_client.username, "test_username")
 
     @tagged("post_install", "-at_install")
     def test_it_sends_a_product_to_digi_using_the_right_headers_and_url(self):
         product = self.env["product.product"].create({"name": "Test Product"})
 
-        digi_client = self.env["digi_sync.digi_client"].create(
-            {"username": "test_username", "password": "123"}
-        )
-
         with patch("requests.post") as post_spy:
             post_spy.return_value.status_code = 200
+            post_spy.return_value.json.return_value = "{}"
             expected_url = "https://fresh.digi.eu:8010/API/V1/ARTICLE.SVC/POST"
             expected_headers = {
                 "ApplicationLogIn": json.dumps(
@@ -36,17 +35,13 @@ class DigiClientTestCase(TransactionCase):
                 "Content-Type": "application/json",
             }
 
-            digi_client.send_product_to_digi(product)
+            self.digi_client.send_product_to_digi(product)
 
             self.assertEqual(post_spy.call_args.kwargs["url"], expected_url)
             self.assertEqual(post_spy.call_args.kwargs["headers"], expected_headers)
 
     @tagged("post_install", "-at_install")
     def test_it_sends_a_product_to_digi_with_the_right_payload(self):
-        digi_client = self.env["digi_sync.digi_client"].create(
-            {"username": "test_username", "password": "123"}
-        )
-
         name = "Test product"
         ingredients = "Noten en zo"
         plu_code = 200
@@ -77,10 +72,55 @@ class DigiClientTestCase(TransactionCase):
 
         with patch("requests.post") as post_spy:
             post_spy.return_value.status_code = 200
+            post_spy.return_value.json.return_value = "{}"
 
-            digi_client.send_product_to_digi(product)
+            self.digi_client.send_product_to_digi(product)
 
             self.assertEqual(post_spy.call_args.kwargs["data"], expected_payload)
+
+    @tagged("post_install", "-at_install")
+    def test_it_throws_an_exception_when_request_failed(self):
+        product = self.env["product.product"].create({"name": "Test product"})
+        with patch("requests.post") as post_spy:
+            post_spy.return_value.status_code = 200
+            post_spy.return_value.json.return_value = """
+            {
+  "Result": -99,
+  "ResultDescription": "Invalid_UserPassword",
+  "DataId": 0,
+  "Post": [],
+  "Validation": []
+}
+            """
+            with self.assertRaises(DigiApiException):
+                self.digi_client.send_product_to_digi(product)
+
+    @tagged("post_install", "-at_install")
+    def test_it_sets_the_result_description_as_exception_message(self):
+        product = self.env["product.product"].create({"name": "Test product"})
+        with patch("requests.post") as post_spy:
+            post_spy.return_value.status_code = 200
+            post_spy.return_value.json.return_value = """
+                {
+      "Result": -99,
+      "ResultDescription": "The result description",
+      "DataId": 0,
+      "Post": [],
+      "Validation": []
+    }
+                """
+            with self.assertRaises(DigiApiException) as context:
+                self.digi_client.send_product_to_digi(product)
+            self.assertEqual(str(context.exception), "The result description")
+
+    def test_it_doesnt_catch_other_exceptions(self):
+        product = self.env["product.product"].create({"name": "Test product"})
+        with patch("requests.post") as post_spy:
+            post_spy.return_value.status_code = 200
+            post_spy.return_value.json.return_value = "Invalid json {"
+
+            with self.assertRaises(JSONDecodeError):
+                self.digi_client.send_product_to_digi(product)
 
     def _create_expected_payload(
         self,
