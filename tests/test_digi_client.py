@@ -1,6 +1,10 @@
+import base64
+import io
 import json
 from json import JSONDecodeError
 from unittest.mock import patch
+
+from PIL import Image
 
 from odoo.tests import TransactionCase, tagged
 
@@ -161,6 +165,100 @@ class DigiClientTestCase(TransactionCase):
 
             with self.assertRaises(JSONDecodeError):
                 self.digi_client.send_product_to_digi(product)
+
+    def test_it_sends_a_product_image_to_digi_with_the_right_url(self):
+        name = "product Name"
+        plu_code = 200
+
+        product_with_image = self._create_product_with_image(name, plu_code)
+
+        # expected_image_data = product_with_image.image_1920.decode('utf-8')
+
+        # payload = {}
+        # payload['DataId'] = plu_code
+        # payload['InputFormat'] = "png"
+        # payload['Links'] = [{
+        #     'DataId': plu_code,
+        #     'LinkNumber': 1,
+        #     'Type': {
+        #         'Description': 'Article',
+        #         'Id': 2,
+        #     }
+        # }]
+        # payload['OriginalInput'] = expected_image_data
+        # payload['Names'] = [{
+        #     "DataId": 1,
+        #     "Reference": "Nederlands",
+        #     'Name': "product_name",
+        # }]
+        # payload['InputFormat'] = 'png'
+
+        with patch("requests.post") as post_spy:
+            post_spy.return_value.status_code = 200
+            post_spy.return_value.json.return_value = "{}"
+            expected_url = "https://fresh.digi.eu:8010/API/V1/MultiMedia.SVC/POST"
+
+            self.digi_client.send_product_image_to_digi(product_with_image)
+
+            self.assertEqual(post_spy.call_args.kwargs["url"], expected_url)
+
+    def test_it_sends_a_product_image_to_digi_with_the_right_payload(self):
+        name = "product Name"
+        plu_code = 200
+
+        product_with_image = self._create_product_with_image(name, plu_code)
+
+        expected_image_data = product_with_image.image_1920.decode("utf-8")
+
+        payload = {}
+        payload["DataId"] = plu_code
+        payload["Links"] = [
+            {
+                "DataId": plu_code,
+                "LinkNumber": 1,
+                "Type": {
+                    "Description": "Article",
+                    "Id": 2,
+                },
+            }
+        ]
+        payload["OriginalInput"] = expected_image_data
+        payload["Names"] = [
+            {
+                "DataId": 1,
+                "Reference": "Nederlands",
+                "Name": "product_name",
+            }
+        ]
+        payload["InputFormat"] = "png"
+
+        expected_payload = json.dumps(payload)
+
+        with patch("requests.post") as post_spy:
+            post_spy.return_value.status_code = 200
+            post_spy.return_value.json.return_value = "{}"
+
+            self.digi_client.send_product_image_to_digi(product_with_image)
+
+            self.assertEqual(post_spy.call_args.kwargs["data"], expected_payload)
+
+    def _create_product_with_image(self, name, plu_code):
+        product_with_image = self.env["product.product"].create(
+            {
+                "name": name,
+                "plu_code": plu_code,
+                "list_price": 1.0,
+            }
+        )
+        # Create a 1x1 pixel image
+        image = Image.new("RGB", (1, 1))
+        output = io.BytesIO()
+        image.save(output, format="PNG")
+        # Get the binary data of the image
+        image_data = base64.b64encode(output.getvalue())
+        output.close()
+        product_with_image.image_1920 = image_data
+        return product_with_image
 
     def _create_expected_product_payload(
         self,
