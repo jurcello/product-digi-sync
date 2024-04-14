@@ -50,7 +50,7 @@ class DigiClientTestCase(TransactionCase):
 
         test_category = self.env["product.category"].create({"name": "Test category"})
 
-        expected_payload = self._create_expected_payload(
+        expected_payload = self._create_expected_product_payload(
             expected_cost_price,
             expected_unit_price,
             ingredients,
@@ -75,6 +75,46 @@ class DigiClientTestCase(TransactionCase):
             post_spy.return_value.json.return_value = "{}"
 
             self.digi_client.send_product_to_digi(product)
+
+            self.assertEqual(post_spy.call_args.kwargs["data"], expected_payload)
+
+    def test_it_does_not_send_empty_fields(self):
+        name = "Test product"
+        ingredients = "Noten en zo"
+        plu_code = 200
+
+        test_category = self.env["product.category"].create({"name": "Test category"})
+
+        product_without_standard_price = self.env["product.product"].create(
+            {
+                "name": "Test product",
+                "ingredients": ingredients,
+                "plu_code": plu_code,
+                "list_price": 1.0,
+                "categ_id": test_category.id,
+            }
+        )
+
+        data = {}
+        data["DataId"] = plu_code
+        data["Names"] = [
+            {
+                "Reference": "Nederlands",
+                "DdFormatCommodity": f"01000000{name}",
+                "DdFormatIngredient": f"01000000{ingredients}",
+            }
+        ]
+        data["UnitPrice"] = int(product_without_standard_price.list_price * 100)
+        data["MainGroupDataId"] = test_category.id
+        data["StatusFields"] = {"PiecesArticle": False}
+
+        expected_payload = json.dumps(data)
+
+        with patch("requests.post") as post_spy:
+            post_spy.return_value.status_code = 200
+            post_spy.return_value.json.return_value = "{}"
+
+            self.digi_client.send_product_to_digi(product_without_standard_price)
 
             self.assertEqual(post_spy.call_args.kwargs["data"], expected_payload)
 
@@ -122,7 +162,7 @@ class DigiClientTestCase(TransactionCase):
             with self.assertRaises(JSONDecodeError):
                 self.digi_client.send_product_to_digi(product)
 
-    def _create_expected_payload(
+    def _create_expected_product_payload(
         self,
         expected_cost_price,
         expected_unit_price,

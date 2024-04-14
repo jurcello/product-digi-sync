@@ -26,11 +26,13 @@ class DigiClient(models.Model):
 
         body = ProductTransformer.transform_product_to_payload(product)
 
+        self._post_to_digi(url, headers, body)
+
+    def _post_to_digi(self, url, headers, body):
         response = requests.post(
             url=url, headers=headers, data=body, timeout=30, allow_redirects=False
         )
         response_json = json.loads(response.json())
-
         if "Result" in response_json and response_json["Result"] == -99:
             raise DigiApiException(response_json["ResultDescription"])
 
