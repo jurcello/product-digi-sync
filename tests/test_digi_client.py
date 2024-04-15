@@ -1,8 +1,9 @@
 import base64
+import contextlib
 import io
 import json
 from json import JSONDecodeError
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from PIL import Image
 
@@ -28,9 +29,7 @@ class DigiClientTestCase(TransactionCase):
     def test_it_sends_a_product_to_digi_using_the_right_headers_and_url(self):
         product = self.env["product.product"].create({"name": "Test Product"})
 
-        with patch("requests.post") as post_spy:
-            post_spy.return_value.status_code = 200
-            post_spy.return_value.json.return_value = "{}"
+        with self.patch_request_post() as post_spy:
             expected_url = "https://fresh.digi.eu:8010/API/V1/ARTICLE.SVC/POST"
             expected_headers = {
                 "ApplicationLogIn": json.dumps(
@@ -74,14 +73,12 @@ class DigiClientTestCase(TransactionCase):
             }
         )
 
-        with patch("requests.post") as post_spy:
-            post_spy.return_value.status_code = 200
-            post_spy.return_value.json.return_value = "{}"
-
+        with self.patch_request_post() as post_spy:
             self.digi_client.send_product_to_digi(product)
 
             self.assertEqual(post_spy.call_args.kwargs["data"], expected_payload)
 
+    @tagged("post_install", "-at_install")
     def test_it_does_not_send_empty_fields(self):
         name = "Test product"
         ingredients = "Noten en zo"
@@ -114,13 +111,93 @@ class DigiClientTestCase(TransactionCase):
 
         expected_payload = json.dumps(data)
 
-        with patch("requests.post") as post_spy:
-            post_spy.return_value.status_code = 200
-            post_spy.return_value.json.return_value = "{}"
-
+        with self.patch_request_post() as post_spy:
             self.digi_client.send_product_to_digi(product_without_standard_price)
 
             self.assertEqual(post_spy.call_args.kwargs["data"], expected_payload)
+
+    @tagged("post_install", "-at_install")
+    def test_it_sends_no_barcode_to_digi_id_if_wrong_format(self):
+        barcode_rule = self.env["barcode.rule"].create(
+            {
+                "name": "Test barcode",
+                "encoding": "ean13",
+                "type": "price",
+                "pattern": ".*",
+                "digi_barcode_type_id": 42,
+            }
+        )
+
+        category = self.env["product.category"].create(
+            {
+                "name": "Test category",
+                "barcode_rule_id": barcode_rule.id,
+            }
+        )
+
+        product = self.env["product.product"].create(
+            {
+                "name": "Test product",
+                "categ_id": category.id,
+            }
+        )
+
+        with self.patch_request_post() as post_spy:
+            self.digi_client.send_product_to_digi(product)
+
+            sended_json = post_spy.call_args.kwargs["data"]
+            sended_data = json.loads(sended_json)
+            self.assertFalse("NormalBarcode1" in sended_data)
+
+    @tagged("post_install", "-at_install")
+    def test_it_sends_the_barcode_digi_id_if_present(self):
+        barcode_rule = self.env["barcode.rule"].create(
+            {
+                "name": "Test barcode",
+                "encoding": "ean13",
+                "type": "price",
+                "pattern": "27.*",
+                "digi_barcode_type_id": 42,
+            }
+        )
+
+        category = self.env["product.category"].create(
+            {
+                "name": "Test category",
+                "barcode_rule_id": barcode_rule.id,
+            }
+        )
+
+        product = self.env["product.product"].create(
+            {
+                "name": "Test product",
+                "categ_id": category.id,
+            }
+        )
+
+        expected_data = {
+            "NormalBarcode1": {
+                "BarcodeDataType": {
+                    "Id": 42,
+                },
+                "Code": 0,
+                "DataId": 1,
+                "Flag": 27,
+                "Type": {
+                    "Id": 42,
+                },
+            }
+        }
+
+        with self.patch_request_post() as post_spy:
+            self.digi_client.send_product_to_digi(product)
+
+            sent_json = post_spy.call_args.kwargs["data"]
+            sent_data = json.loads(sent_json)
+
+            compare_data = {key: sent_data[key] for key in expected_data}
+
+            self.assertEqual(expected_data, compare_data)
 
     @tagged("post_install", "-at_install")
     def test_it_throws_an_exception_when_request_failed(self):
@@ -159,10 +236,8 @@ class DigiClientTestCase(TransactionCase):
 
     def test_it_doesnt_catch_other_exceptions(self):
         product = self.env["product.product"].create({"name": "Test product"})
-        with patch("requests.post") as post_spy:
-            post_spy.return_value.status_code = 200
-            post_spy.return_value.json.return_value = "Invalid json {"
 
+        with self.patch_request_post(json_return_value="Invalid json {"):
             with self.assertRaises(JSONDecodeError):
                 self.digi_client.send_product_to_digi(product)
 
@@ -172,9 +247,7 @@ class DigiClientTestCase(TransactionCase):
 
         product_with_image = self._create_product_with_image(name, plu_code)
 
-        with patch("requests.post") as post_spy:
-            post_spy.return_value.status_code = 200
-            post_spy.return_value.json.return_value = "{}"
+        with self.patch_request_post() as post_spy:
             expected_url = "https://fresh.digi.eu:8010/API/V1/MultiMedia.SVC/POST"
 
             self.digi_client.send_product_image_to_digi(product_with_image)
@@ -213,10 +286,7 @@ class DigiClientTestCase(TransactionCase):
 
         expected_payload = json.dumps(payload)
 
-        with patch("requests.post") as post_spy:
-            post_spy.return_value.status_code = 200
-            post_spy.return_value.json.return_value = "{}"
-
+        with self.patch_request_post() as post_spy:
             self.digi_client.send_product_image_to_digi(product_with_image)
 
             self.assertEqual(post_spy.call_args.kwargs["data"], expected_payload)
@@ -231,9 +301,7 @@ class DigiClientTestCase(TransactionCase):
             }
         )
 
-        with patch("requests.post") as post_spy:
-            post_spy.return_value.status_code = 200
-            post_spy.return_value.json.return_value = "{}"
+        with self.patch_request_post() as post_spy:
             expected_url = "https://fresh.digi.eu:8010/API/V1/MAINGROUP.SVC/POST"
 
             self.digi_client.send_category_to_digi(category)
@@ -263,12 +331,18 @@ class DigiClientTestCase(TransactionCase):
 
         expected_payload = json.dumps(payload)
 
-        with patch("requests.post") as post_spy:
-            post_spy.return_value.status_code = 200
-            post_spy.return_value.json.return_value = "{}"
+        with self.patch_request_post() as post_spy:
             self.digi_client.send_category_to_digi(category)
 
             self.assertEqual(post_spy.call_args.kwargs["data"], expected_payload)
+
+    @contextlib.contextmanager
+    def patch_request_post(self, status_code=200, json_return_value="{}"):
+        mock_post = Mock()
+        mock_post.status_code = status_code
+        mock_post.json.return_value = json_return_value
+        with patch("requests.post", return_value=mock_post) as post_spy:
+            yield post_spy
 
     def _create_product_with_image(self, name, plu_code):
         product_with_image = self.env["product.product"].create(

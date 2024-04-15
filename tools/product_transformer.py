@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import re
 
 from PIL import Image
 
@@ -24,6 +25,29 @@ class ProductTransformer:
         if product.categ_id.id:
             data["MainGroupDataId"] = product.categ_id.id
         data["StatusFields"] = {"PiecesArticle": False}
+        if (
+            product
+            and getattr(product, "categ_id", None)
+            and getattr(product.categ_id, "barcode_rule_id", None)
+            and getattr(product.categ_id.barcode_rule_id, "digi_barcode_type_id", None)
+        ):
+            matches = re.match(r"^(\d{2}).*", product.categ_id.barcode_rule_id.pattern)
+
+            if matches:
+                flag = matches.group(1)
+                if flag.isnumeric():
+                    barcode_id = product.categ_id.barcode_rule_id.digi_barcode_type_id
+                    data["NormalBarcode1"] = {
+                        "BarcodeDataType": {
+                            "Id": barcode_id,
+                        },
+                        "Code": 0,
+                        "DataId": 1,
+                        "Flag": int(flag),
+                        "Type": {
+                            "Id": barcode_id,
+                        },
+                    }
 
         return json.dumps(data)
 
