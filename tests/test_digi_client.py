@@ -172,27 +172,6 @@ class DigiClientTestCase(TransactionCase):
 
         product_with_image = self._create_product_with_image(name, plu_code)
 
-        # expected_image_data = product_with_image.image_1920.decode('utf-8')
-
-        # payload = {}
-        # payload['DataId'] = plu_code
-        # payload['InputFormat'] = "png"
-        # payload['Links'] = [{
-        #     'DataId': plu_code,
-        #     'LinkNumber': 1,
-        #     'Type': {
-        #         'Description': 'Article',
-        #         'Id': 2,
-        #     }
-        # }]
-        # payload['OriginalInput'] = expected_image_data
-        # payload['Names'] = [{
-        #     "DataId": 1,
-        #     "Reference": "Nederlands",
-        #     'Name': "product_name",
-        # }]
-        # payload['InputFormat'] = 'png'
-
         with patch("requests.post") as post_spy:
             post_spy.return_value.status_code = 200
             post_spy.return_value.json.return_value = "{}"
@@ -239,6 +218,55 @@ class DigiClientTestCase(TransactionCase):
             post_spy.return_value.json.return_value = "{}"
 
             self.digi_client.send_product_image_to_digi(product_with_image)
+
+            self.assertEqual(post_spy.call_args.kwargs["data"], expected_payload)
+
+    def test_it_sends_a_product_category_to_digi_with_the_right_url(self):
+        category_name = "Test category"
+        digi_id = 2
+        category = self.env["product.category"].create(
+            {
+                "name": category_name,
+                "external_digi_id": digi_id,
+            }
+        )
+
+        with patch("requests.post") as post_spy:
+            post_spy.return_value.status_code = 200
+            post_spy.return_value.json.return_value = "{}"
+            expected_url = "https://fresh.digi.eu:8010/API/V1/MAINGROUP.SVC/POST"
+
+            self.digi_client.send_category_to_digi(category)
+
+            self.assertEqual(post_spy.call_args.kwargs["url"], expected_url)
+
+    def test_it_sends_a_category_digi(self):
+        category_name = "Test category"
+        digi_id = 2
+        category = self.env["product.category"].create(
+            {
+                "name": category_name,
+                "external_digi_id": digi_id,
+            }
+        )
+
+        payload = {
+            "DataId": digi_id,
+            "DepartmentId": 97,
+            "Names": [
+                {
+                    "Reference": "Nederlands",
+                    "Name": category_name,
+                }
+            ],
+        }
+
+        expected_payload = json.dumps(payload)
+
+        with patch("requests.post") as post_spy:
+            post_spy.return_value.status_code = 200
+            post_spy.return_value.json.return_value = "{}"
+            self.digi_client.send_category_to_digi(category)
 
             self.assertEqual(post_spy.call_args.kwargs["data"], expected_payload)
 

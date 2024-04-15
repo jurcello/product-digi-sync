@@ -34,6 +34,15 @@ class DigiClient(models.Model):
 
         self._post_to_digi(url, body)
 
+    def send_category_to_digi(self, product_category):
+        url = self.create_category_url()
+
+        body = ProductTransformer.transform_product_category_to_payload(
+            product_category
+        )
+
+        self._post_to_digi(url, body)
+
     def _post_to_digi(self, url, body):
         headers = self.create_header()
         response = requests.post(
@@ -49,6 +58,10 @@ class DigiClient(models.Model):
 
     def create_image_url(self):
         url = f"{self.FRESH_URL}/MultiMedia.SVC/POST"
+        return url
+
+    def create_category_url(self):
+        url = f"{self.FRESH_URL}/MAINGROUP.SVC/POST"
         return url
 
     def create_header(self):

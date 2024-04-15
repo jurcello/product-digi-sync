@@ -54,3 +54,17 @@ class ProductTransformer:
         ]
         payload["InputFormat"] = image_format
         return json.dumps(payload)
+
+    @classmethod
+    def transform_product_category_to_payload(cls, product_category):
+        payload = {
+            "DataId": product_category.external_digi_id,
+            "DepartmentId": 97,
+            "Names": [
+                {
+                    "Reference": "Nederlands",
+                    "Name": product_category.name,
+                }
+            ],
+        }
+        return json.dumps(payload)
