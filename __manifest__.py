@@ -15,6 +15,7 @@
         "views/product_template_views.xml",
         "views/product_category_views.xml",
         "views/digi_client_views.xml",
+        "views/digi_client_settings_view.xml",
     ],
     # any module necessary for this one to work correctly
     "depends": ["product_food_fields", "product", "point_of_sale"],
