@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="digi_client_form_view" model="ir.ui.view">
+        <field name="name">digi_client_form_view</field>
+        <field name="model">product_digi_sync.digi_client</field>
+        <field name="arch" type="xml">
+            <form string="Digi Client Form">
+                <sheet>
+                    <group>
+                        <field name="name" />
+                        <field name="username" />
+                        <field name="password" />
+                    </group>
+                </sheet>
+
+            </form>
+        </field>
+    </record>
+
+    <record id="digi_client_tree_view" model="ir.ui.view">
+        <field name="name">digi_client_tree_view</field>
+        <field name="model">product_digi_sync.digi_client</field>
+        <field name="arch" type="xml">
+            <tree string="Digi Client List">
+                <field name="name" />
+                <field name="username" />
+            </tree>
+        </field>
+    </record>
+
+    <record id="digi_client_action" model="ir.actions.act_window">
+        <field name="name">Digi Clients</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">product_digi_sync.digi_client</field>
+        <field name="view_mode">tree,form</field>
+                <field name="help" type="html">
+            <p class="o_view_nocontent_empty_folder">
+                Click to create your first Digi Client.
+            </p>
+        </field>
+
+    </record>
+
+    <menuitem
+        id="digi_client_menu"
+        name="Digi Clients"
+        parent="point_of_sale.menu_point_config_product"
+        sequence="30"
+        action="digi_client_action"
+    />
+</odoo>

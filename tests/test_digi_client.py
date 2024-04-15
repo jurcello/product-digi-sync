@@ -15,8 +15,8 @@ class DigiClientTestCase(TransactionCase):
     def setUp(self):
         super().setUp()
         self.maxDiff = None
-        self.digi_client = self.env["digi_sync.digi_client"].create(
-            {"username": "test_username", "password": "123"}
+        self.digi_client = self.env["product_digi_sync.digi_client"].create(
+            {"username": "test_username", "password": "123", "name": "Default"}
         )
 
     @tagged("post_install", "-at_install")

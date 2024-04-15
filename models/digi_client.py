@@ -12,11 +12,12 @@ class DigiApiException(Exception):
 
 
 class DigiClient(models.Model):
-    _name = "digi_sync.digi_client"
+    _name = "product_digi_sync.digi_client"
     _description = "Digi Client"
 
     FRESH_URL = "https://fresh.digi.eu:8010/API/V1"
 
+    name = fields.Char(required=True)
     username = fields.Char("@Fresh Username", required=True)
     password = fields.Char("@Fresh Password", required=True)
 
