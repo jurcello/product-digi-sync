@@ -16,6 +16,7 @@
         "views/product_category_views.xml",
         "views/digi_client_views.xml",
         "views/digi_client_settings_view.xml",
+        "views/barcode_rule.views.xml",
     ],
     # any module necessary for this one to work correctly
     "depends": ["product_food_fields", "product", "point_of_sale"],

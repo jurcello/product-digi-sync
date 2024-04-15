@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<odoo>
+    <record model="ir.ui.view" id="view_barcode_nomenclature_form">
+        <field name="model">barcode.nomenclature</field>
+        <field name="inherit_id" ref="barcodes.view_barcode_nomenclature_form" />
+        <field name="arch" type="xml">
+            <field name="pattern" position="after">
+                <field name="digi_barcode_type_id" />
+            </field>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_barcode_rule_form">
+        <field name="model">barcode.rule</field>
+        <field name="inherit_id" ref="barcodes.view_barcode_rule_form" />
+        <field name="arch" type="xml">
+            <field name="pattern" position="after">
+                <field name="digi_barcode_type_id" />
+            </field>
+        </field>
+    </record>
+</odoo>
