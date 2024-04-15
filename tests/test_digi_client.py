@@ -345,7 +345,7 @@ class DigiClientTestCase(TransactionCase):
             yield post_spy
 
     def _create_product_with_image(self, name, plu_code):
-        product_with_image = self.env["product.product"].create(
+        product_with_image = self.env["product.template"].create(
             {
                 "name": name,
                 "plu_code": plu_code,

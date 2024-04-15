@@ -14,10 +14,10 @@ class ResConfigSettings(models.TransientModel):
     @api.model
     def get_values(self):
         res = super().get_values()
-        ICPSudo = self.env["ir.config_parameter"].sudo()
-        digi_client_id = ICPSudo.get_param("digi_client_id")
+        configuration = self.env["ir.config_parameter"]
+        digi_client_id = configuration.get_param("digi_client_id")
         res.update(
-            digi_sync_products_enabled=ICPSudo.get_param(
+            digi_sync_products_enabled=configuration.get_param(
                 "digi_sync_products_enabled", default=False
             ),
             digi_client_id=int(digi_client_id) if digi_client_id else False,
@@ -25,7 +25,9 @@ class ResConfigSettings(models.TransientModel):
         return res
 
     def set_values(self):
-        ICPSudo = self.env["ir.config_parameter"].sudo()
-        ICPSudo.set_param("digi_sync_products_enabled", self.digi_sync_products_enabled)
-        ICPSudo.set_param("digi_client_id", self.digi_client_id.id)
+        configuration = self.env["ir.config_parameter"]
+        configuration.set_param(
+            "digi_sync_products_enabled", self.digi_sync_products_enabled
+        )
+        configuration.set_param("digi_client_id", self.digi_client_id.id)
         return super().set_values()

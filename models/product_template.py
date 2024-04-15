@@ -42,3 +42,29 @@ class ProductTemplate(models.Model):
             barcode = f"{barcode}{barcode_check_digit}"
 
         return barcode
+
+    def write(self, vals):
+        result = super().write(vals)
+        if self.plu_code:
+            self.send_to_digi()
+        if self.image_1920:
+            self.send_image_to_digi()
+        return result
+
+    def send_to_digi(self):
+        digi_client_id = int(
+            self.env["ir.config_parameter"].get_param("digi_client_id")
+        )
+        client = self.env["product_digi_sync.digi_client"].browse(digi_client_id)
+
+        if client.exists():
+            client.send_product_to_digi(self)
+
+    def send_image_to_digi(self):
+        digi_client_id = int(
+            self.env["ir.config_parameter"].get_param("digi_client_id")
+        )
+        client = self.env["product_digi_sync.digi_client"].browse(digi_client_id)
+
+        if client.exists():
+            client.send_product_image_to_digi(self)
