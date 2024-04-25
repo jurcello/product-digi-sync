@@ -11,12 +11,15 @@ class ProductTemplate(models.Model):
 
     @api.depends("plu_code")
     def _compute_barcode(self):
-        if self.plu_code and self.categ_id.barcode_rule_id:
-            pattern = self.categ_id.barcode_rule_id.pattern
+        for record in self:
+            if record.plu_code and record.categ_id.barcode_rule_id:
+                pattern = record.categ_id.barcode_rule_id.pattern
 
-            is_ean = self.categ_id.barcode_rule_id.encoding == "ean13"
-            # Add barcode to vals
-            self.barcode = self._prepare_barcode(pattern, self.plu_code, is_ean)
+                is_ean = record.categ_id.barcode_rule_id.encoding == "ean13"
+                # Add barcode to vals
+                record.barcode = record._prepare_barcode(
+                    pattern, record.plu_code, is_ean
+                )
 
     @staticmethod
     def _prepare_barcode(barcode_pattern, plu_code, is_ean13):
