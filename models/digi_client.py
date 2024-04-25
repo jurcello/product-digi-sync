@@ -49,7 +49,8 @@ class DigiClient(models.Model):
         response = requests.post(
             url=url, headers=headers, data=body, timeout=30, allow_redirects=False
         )
-        response_json = json.loads(response.json())
+        response_json = response.json()
+
         if "Result" in response_json and response_json["Result"] == -99:
             raise DigiApiException(response_json["ResultDescription"])
 

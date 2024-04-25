@@ -3,8 +3,9 @@ import contextlib
 import io
 import json
 from json import JSONDecodeError
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
+import requests
 from PIL import Image
 
 from odoo.tests import TransactionCase, tagged
@@ -202,34 +203,38 @@ class DigiClientTestCase(TransactionCase):
     @tagged("post_install", "-at_install")
     def test_it_throws_an_exception_when_request_failed(self):
         product = self.env["product.product"].create({"name": "Test product"})
-        with patch("requests.post") as post_spy:
-            post_spy.return_value.status_code = 200
-            post_spy.return_value.json.return_value = """
-            {
-  "Result": -99,
-  "ResultDescription": "Invalid_UserPassword",
-  "DataId": 0,
-  "Post": [],
-  "Validation": []
-}
-            """
+        response_content = """
+                    {
+          "Result": -99,
+          "ResultDescription": "Invalid_UserPassword",
+          "DataId": 0,
+          "Post": [],
+          "Validation": []
+        }
+                    """
+
+        with self.patch_request_post(
+            status_code=200, response_content=response_content
+        ):
             with self.assertRaises(DigiApiException):
                 self.digi_client.send_product_to_digi(product)
 
     @tagged("post_install", "-at_install")
     def test_it_sets_the_result_description_as_exception_message(self):
         product = self.env["product.product"].create({"name": "Test product"})
-        with patch("requests.post") as post_spy:
-            post_spy.return_value.status_code = 200
-            post_spy.return_value.json.return_value = """
-                {
-      "Result": -99,
-      "ResultDescription": "The result description",
-      "DataId": 0,
-      "Post": [],
-      "Validation": []
-    }
-                """
+        response_content = """
+                    {
+          "Result": -99,
+          "ResultDescription": "The result description",
+          "DataId": 0,
+          "Post": [],
+          "Validation": []
+        }
+                    """
+
+        with self.patch_request_post(
+            status_code=200, response_content=response_content
+        ):
             with self.assertRaises(DigiApiException) as context:
                 self.digi_client.send_product_to_digi(product)
             self.assertEqual(str(context.exception), "The result description")
@@ -237,17 +242,16 @@ class DigiClientTestCase(TransactionCase):
     def test_it_doesnt_catch_other_exceptions(self):
         product = self.env["product.product"].create({"name": "Test product"})
 
-        with self.patch_request_post(json_return_value="Invalid json {"):
+        with self.patch_request_post(response_content="Invalid json {"):
             with self.assertRaises(JSONDecodeError):
                 self.digi_client.send_product_to_digi(product)
 
     def test_it_sends_a_product_image_to_digi_with_the_right_url(self):
         name = "product Name"
         plu_code = 200
-
-        product_with_image = self._create_product_with_image(name, plu_code)
-
         with self.patch_request_post() as post_spy:
+            product_with_image = self._create_product_with_image(name, plu_code)
+
             expected_url = "https://fresh.digi.eu:8010/API/V1/MultiMedia.SVC/POST"
 
             self.digi_client.send_product_image_to_digi(product_with_image)
@@ -258,35 +262,35 @@ class DigiClientTestCase(TransactionCase):
         name = "product Name"
         plu_code = 200
 
-        product_with_image = self._create_product_with_image(name, plu_code)
-
-        expected_image_data = product_with_image.image_1920.decode("utf-8")
-
-        payload = {}
-        payload["DataId"] = plu_code
-        payload["Links"] = [
-            {
-                "DataId": plu_code,
-                "LinkNumber": 1,
-                "Type": {
-                    "Description": "Article",
-                    "Id": 2,
-                },
-            }
-        ]
-        payload["OriginalInput"] = expected_image_data
-        payload["Names"] = [
-            {
-                "DataId": 1,
-                "Reference": "Nederlands",
-                "Name": "product_name",
-            }
-        ]
-        payload["InputFormat"] = "png"
-
-        expected_payload = json.dumps(payload)
-
         with self.patch_request_post() as post_spy:
+            product_with_image = self._create_product_with_image(name, plu_code)
+
+            expected_image_data = product_with_image.image_1920.decode("utf-8")
+
+            payload = {}
+            payload["DataId"] = plu_code
+            payload["Links"] = [
+                {
+                    "DataId": plu_code,
+                    "LinkNumber": 1,
+                    "Type": {
+                        "Description": "Article",
+                        "Id": 2,
+                    },
+                }
+            ]
+            payload["OriginalInput"] = expected_image_data
+            payload["Names"] = [
+                {
+                    "DataId": 1,
+                    "Reference": "Nederlands",
+                    "Name": "product_name",
+                }
+            ]
+            payload["InputFormat"] = "png"
+
+            expected_payload = json.dumps(payload)
+
             self.digi_client.send_product_image_to_digi(product_with_image)
 
             self.assertEqual(post_spy.call_args.kwargs["data"], expected_payload)
@@ -337,11 +341,11 @@ class DigiClientTestCase(TransactionCase):
             self.assertEqual(post_spy.call_args.kwargs["data"], expected_payload)
 
     @contextlib.contextmanager
-    def patch_request_post(self, status_code=200, json_return_value="{}"):
-        mock_post = Mock()
-        mock_post.status_code = status_code
-        mock_post.json.return_value = json_return_value
-        with patch("requests.post", return_value=mock_post) as post_spy:
+    def patch_request_post(self, status_code=200, response_content="{}"):
+        mock_response = requests.Response()
+        mock_response.status_code = status_code
+        mock_response._content = response_content.encode("utf-8")
+        with patch("requests.post", return_value=mock_response) as post_spy:
             yield post_spy
 
     def _create_product_with_image(self, name, plu_code):
