@@ -52,7 +52,12 @@ class DigiClientTestCase(TransactionCase):
         expected_unit_price = 250
         expected_cost_price = 150
 
-        test_category = self.env["product.category"].create({"name": "Test category"})
+        test_category = self.env["product.category"].create(
+            {
+                "name": "Test category",
+                "external_digi_id": 42,
+            }
+        )
 
         expected_payload = self._create_expected_product_payload(
             expected_cost_price,
@@ -60,7 +65,7 @@ class DigiClientTestCase(TransactionCase):
             ingredients,
             name,
             plu_code,
-            test_category.id,
+            test_category.external_digi_id,
         )
 
         product = self.env["product.product"].create(
@@ -85,7 +90,12 @@ class DigiClientTestCase(TransactionCase):
         ingredients = "Noten en zo"
         plu_code = 200
 
-        test_category = self.env["product.category"].create({"name": "Test category"})
+        test_category = self.env["product.category"].create(
+            {
+                "name": "Test category",
+                "external_digi_id": 120,
+            }
+        )
 
         product_without_standard_price = self.env["product.product"].create(
             {
@@ -107,7 +117,47 @@ class DigiClientTestCase(TransactionCase):
             }
         ]
         data["UnitPrice"] = int(product_without_standard_price.list_price * 100)
-        data["MainGroupDataId"] = test_category.id
+        data["MainGroupDataId"] = test_category.external_digi_id
+        data["StatusFields"] = {"PiecesArticle": False}
+
+        expected_payload = json.dumps(data)
+
+        with self.patch_request_post() as post_spy:
+            self.digi_client.send_product_to_digi(product_without_standard_price)
+
+            self.assertEqual(post_spy.call_args.kwargs["data"], expected_payload)
+
+    @tagged("post_install", "-at_install")
+    def test_it_does_not_send_empty_ingredients(self):
+        name = "Test product"
+        plu_code = 200
+
+        test_category = self.env["product.category"].create(
+            {
+                "name": "Test category",
+                "external_digi_id": 120,
+            }
+        )
+
+        product_without_standard_price = self.env["product.product"].create(
+            {
+                "name": "Test product",
+                "plu_code": plu_code,
+                "list_price": 1.0,
+                "categ_id": test_category.id,
+            }
+        )
+
+        data = {}
+        data["DataId"] = plu_code
+        data["Names"] = [
+            {
+                "Reference": "Nederlands",
+                "DdFormatCommodity": f"01000000{name}",
+            }
+        ]
+        data["UnitPrice"] = int(product_without_standard_price.list_price * 100)
+        data["MainGroupDataId"] = test_category.external_digi_id
         data["StatusFields"] = {"PiecesArticle": False}
 
         expected_payload = json.dumps(data)

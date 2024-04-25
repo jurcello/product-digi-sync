@@ -15,15 +15,16 @@ class ProductTransformer:
             {
                 "Reference": "Nederlands",
                 "DdFormatCommodity": f"01000000{product.name}",
-                "DdFormatIngredient": f"01000000{product.ingredients}",
             }
         ]
+        if product.ingredients:
+            data["Names"][0]["DdFormatIngredient"] = f"01000000{product.ingredients}"
         if product.list_price:
             data["UnitPrice"] = int(product.list_price * 100)
         if product.standard_price:
             data["CostPrice"] = int(product.standard_price * 100)
         if product.categ_id.id:
-            data["MainGroupDataId"] = product.categ_id.id
+            data["MainGroupDataId"] = product.categ_id.external_digi_id
         data["StatusFields"] = {"PiecesArticle": False}
         if (
             product
