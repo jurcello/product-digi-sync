@@ -319,10 +319,11 @@ class DigiClientTestCase(TransactionCase):
 
             payload = {}
             payload["DataId"] = plu_code
+            Linknumber_preset_image = 95
             payload["Links"] = [
                 {
                     "DataId": plu_code,
-                    "LinkNumber": 1,
+                    "LinkNumber": Linknumber_preset_image,
                     "Type": {
                         "Description": "Article",
                         "Id": 2,
@@ -338,6 +339,46 @@ class DigiClientTestCase(TransactionCase):
                 }
             ]
             payload["InputFormat"] = "png"
+
+            expected_payload = json.dumps(payload)
+
+            self.digi_client.send_product_image_to_digi(product_with_image)
+
+            self.assertEqual(post_spy.call_args.kwargs["data"], expected_payload)
+
+    def test_it_sends_a_product_image_to_digi_with_the_right_payload_for_jpeg(self):
+        name = "product Name"
+        plu_code = 200
+
+        with self.patch_request_post() as post_spy:
+            product_with_image = self._create_product_with_image_for_jpeg(
+                name, plu_code
+            )
+
+            expected_image_data = product_with_image.image_1920.decode("utf-8")
+
+            payload = {}
+            payload["DataId"] = plu_code
+            linknumber_preset_image = 95
+            payload["Links"] = [
+                {
+                    "DataId": plu_code,
+                    "LinkNumber": linknumber_preset_image,
+                    "Type": {
+                        "Description": "Article",
+                        "Id": 2,
+                    },
+                }
+            ]
+            payload["OriginalInput"] = expected_image_data
+            payload["Names"] = [
+                {
+                    "DataId": 1,
+                    "Reference": "Nederlands",
+                    "Name": "product_name",
+                }
+            ]
+            payload["InputFormat"] = "jpg"
 
             expected_payload = json.dumps(payload)
 
@@ -410,6 +451,24 @@ class DigiClientTestCase(TransactionCase):
         image = Image.new("RGB", (1, 1))
         output = io.BytesIO()
         image.save(output, format="PNG")
+        # Get the binary data of the image
+        image_data = base64.b64encode(output.getvalue())
+        output.close()
+        product_with_image.image_1920 = image_data
+        return product_with_image
+
+    def _create_product_with_image_for_jpeg(self, name, plu_code):
+        product_with_image = self.env["product.template"].create(
+            {
+                "name": name,
+                "plu_code": plu_code,
+                "list_price": 1.0,
+            }
+        )
+        # Create a 1x1 pixel image
+        image = Image.new("RGB", (1, 1))
+        output = io.BytesIO()
+        image.save(output, format="jpeg")
         # Get the binary data of the image
         image_data = base64.b64encode(output.getvalue())
         output.close()

@@ -50,8 +50,7 @@ class ProductTemplate(models.Model):
         result = super().write(vals)
         if self.plu_code:
             self.send_to_digi()
-        if self.image_1920:
-            self.send_image_to_digi()
+        self.send_image_to_digi()
         return result
 
     def send_to_digi(self):
@@ -64,6 +63,8 @@ class ProductTemplate(models.Model):
             client.send_product_to_digi(self)
 
     def send_image_to_digi(self):
+        if not self.image_1920:
+            return
         digi_client_id = int(
             self.env["ir.config_parameter"].get_param("digi_client_id")
         )

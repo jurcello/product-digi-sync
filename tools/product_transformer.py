@@ -58,11 +58,11 @@ class ProductTransformer:
         payload = {"DataId": product.plu_code}
         image_data = base64.b64decode(product.image_1920)
         image = Image.open(io.BytesIO(image_data))
-        image_format = image.format.lower()
+        image_format = image.format.lower().replace("jpeg", "jpg")
         payload["Links"] = [
             {
                 "DataId": product.plu_code,
-                "LinkNumber": 1,
+                "LinkNumber": 95,
                 "Type": {
                     "Description": "Article",
                     "Id": 2,
