@@ -16,3 +16,18 @@ class ProductCategory(models.Model):
             "External Digi identifier must be unique.",
         ),
     ]
+
+    def write(self, vals):
+        result = super().write(vals)
+        if self.external_digi_id:
+            self.send_to_digi()
+        return result
+
+    def send_to_digi(self):
+        digi_client_id = int(
+            self.env["ir.config_parameter"].get_param("digi_client_id")
+        )
+        client = self.env["product_digi_sync.digi_client"].browse(digi_client_id)
+
+        if client.exists():
+            client.send_category_to_digi(self)
