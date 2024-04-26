@@ -51,8 +51,10 @@ class DigiClient(models.Model):
         )
         response_json = response.json()
 
-        if "Result" in response_json and response_json["Result"] == -99:
-            raise DigiApiException(response_json["ResultDescription"])
+        if "Result" in response_json and response_json["Result"] != 1:
+            raise DigiApiException(
+                f"Error {response_json['Result']}: {response_json['ResultDescription']}"
+            )
 
     def create_article_url(self):
         url = f"{self.FRESH_URL}/ARTICLE.SVC/POST"

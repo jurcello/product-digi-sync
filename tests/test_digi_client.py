@@ -270,12 +270,12 @@ class DigiClientTestCase(TransactionCase):
                 self.digi_client.send_product_to_digi(product)
 
     @tagged("post_install", "-at_install")
-    def test_it_sets_the_result_description_as_exception_message(self):
+    def test_it_sets_the_result_description_and_code_as_exception_message(self):
         product = self.env["product.product"].create({"name": "Test product"})
         response_content = """
                     {
-          "Result": -99,
-          "ResultDescription": "The result description",
+          "Result": -98,
+          "ResultDescription": "Number of filter parameters not correct",
           "DataId": 0,
           "Post": [],
           "Validation": []
@@ -287,7 +287,9 @@ class DigiClientTestCase(TransactionCase):
         ):
             with self.assertRaises(DigiApiException) as context:
                 self.digi_client.send_product_to_digi(product)
-            self.assertEqual(str(context.exception), "The result description")
+        self.assertEqual(
+            str(context.exception), "Error -98: Number of filter parameters not correct"
+        )
 
     def test_it_doesnt_catch_other_exceptions(self):
         product = self.env["product.product"].create({"name": "Test product"})
