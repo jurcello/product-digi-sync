@@ -4,9 +4,23 @@ from odoo.tests import TransactionCase
 
 from odoo.addons.base.models.ir_config_parameter import IrConfigParameter
 from odoo.addons.product_digi_sync.models.digi_client import DigiClient
+from odoo.addons.queue_job.models.base import Base as QueueJobBase
 
 
 class ProductCategoryTestCase(TransactionCase):
+    def setUp(self):
+        super().setUp()
+
+        def mock_with_delay(with_delay_self):
+            return with_delay_self
+
+        self.patcher = patch.object(QueueJobBase, "with_delay", mock_with_delay)
+        self.patcher.start()
+
+    def tearDown(self):
+        super().tearDown()
+        self.patcher.stop()
+
     def test_it_doesn_send_the_category_to_digi_after_save_when_external_id_not_set(
         self
     ):

@@ -24,10 +24,12 @@ class ProductCategory(models.Model):
         return result
 
     def send_to_digi(self):
+        self.with_delay().send_to_digi_directly()
+
+    def send_to_digi_directly(self):
         digi_client_id = int(
             self.env["ir.config_parameter"].get_param("digi_client_id")
         )
         client = self.env["product_digi_sync.digi_client"].browse(digi_client_id)
-
         if client.exists():
             client.send_category_to_digi(self)
