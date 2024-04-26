@@ -434,7 +434,17 @@ class DigiClientTestCase(TransactionCase):
             self.assertEqual(post_spy.call_args.kwargs["data"], expected_payload)
 
     @contextlib.contextmanager
-    def patch_request_post(self, status_code=200, response_content="{}"):
+    def patch_request_post(self, status_code=200, response_content=None):
+        if not response_content:
+            response_content = json.dumps(
+                {
+                    "Result": 1,
+                    "ResultDescription": "Ok",
+                    "DataId": 0,
+                    "Post": [],
+                    "Validation": [],
+                }
+            )
         mock_response = requests.Response()
         mock_response.status_code = status_code
         mock_response._content = response_content.encode("utf-8")
