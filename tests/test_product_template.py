@@ -25,6 +25,25 @@ class ProductTemplateTestCase(TransactionCase):
         super().tearDown()
         self.patcher.stop()
 
+    @patch("logging.Logger.warning")
+    def test_it_logs_an_error_when_plu_code_is_set_but_no_digi_client_is_provided(
+        self, mock_logger
+    ):
+        self._patch_ir_config_parameter_for_get_param("-1")
+
+        product = self.env["product.template"].create(
+            {"name": "Test Product Template", "plu_code": 405}
+        )
+        product.write(
+            {
+                "name": "Test Product Template",
+            }
+        )
+
+        mock_logger.assert_called_with(
+            "Digi client requested, but no client was configured."
+        )
+
     def test_it_sends_the_product_to_digi_when_plu_code_is_set(self):
         product1 = self.env["product.template"].create(
             {"name": "Test Product Template", "plu_code": 405}
@@ -35,15 +54,9 @@ class ProductTemplateTestCase(TransactionCase):
 
         products = self.env["product.template"].browse([product1.id, product2.id])
 
-        digi_client = self.env["product_digi_sync.digi_client"].create(
-            {
-                "name": "Test Digi Client",
-                "username": "user",
-                "password": "<PASSWORD>",
-            }
-        )
+        digi_client = self._create_digi_client()
 
-        patch.object(IrConfigParameter, "get_param", digi_client.id)
+        self._patch_ir_config_parameter_for_get_param(digi_client.id)
         mock_send_product_to_digi = Mock()
         patch.object(
             DigiClient, "send_product_to_digi", mock_send_product_to_digi
@@ -58,7 +71,7 @@ class ProductTemplateTestCase(TransactionCase):
 
         self.assertEqual(mock_send_product_to_digi.call_args[0][0], product1)
 
-    def test_it_sends_the_product_image_to_digi_when_the_image_is_set(self):
+    def _create_digi_client(self):
         digi_client = self.env["product_digi_sync.digi_client"].create(
             {
                 "name": "Test Digi Client",
@@ -66,8 +79,13 @@ class ProductTemplateTestCase(TransactionCase):
                 "password": "<PASSWORD>",
             }
         )
+        return digi_client
 
-        patch.object(IrConfigParameter, "get_param", digi_client.id)
+    def test_it_sends_the_product_image_to_digi_when_the_image_is_set(self):
+        digi_client = self._create_digi_client()
+
+        client_id = digi_client.id
+        self._patch_ir_config_parameter_for_get_param(client_id)
         mock_send_product_image_to_digi = Mock()
         patch.object(
             DigiClient, "send_product_image_to_digi", mock_send_product_image_to_digi
@@ -77,6 +95,18 @@ class ProductTemplateTestCase(TransactionCase):
         product = self._create_product_with_image("Test Product Template", 400)
 
         self.assertEqual(mock_send_product_image_to_digi.call_args[0][0], product)
+        patch.object(IrConfigParameter, "get_param", digi_client.id).stop()
+
+    def _patch_ir_config_parameter_for_get_param(self, client_id):
+        original_get_param = IrConfigParameter.get_param
+
+        def patched_get_param(self, key, default=False):
+            if key == "digi_client_id":
+                return client_id  # return a specific value for a particular key
+            else:
+                return original_get_param(self, key, default)
+
+        patch.object(IrConfigParameter, "get_param", patched_get_param).start()
 
     def _create_product_with_image(self, name, plu_code):
         product_with_image = self.env["product.template"].create(

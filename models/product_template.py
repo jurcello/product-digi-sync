@@ -1,7 +1,10 @@
+import logging
 import re
 
 from odoo import api, fields, models
 from odoo.tools import get_barcode_check_digit
+
+_logger = logging.getLogger(__name__)
 
 
 class ProductTemplate(models.Model):
@@ -59,11 +62,8 @@ class ProductTemplate(models.Model):
         self.with_delay().send_to_digi_directly()
 
     def send_to_digi_directly(self):
-        digi_client_id = int(
-            self.env["ir.config_parameter"].get_param("digi_client_id")
-        )
-        client = self.env["product_digi_sync.digi_client"].browse(digi_client_id)
-        if client.exists():
+        client = self._get_digi_client()
+        if client:
             client.send_product_to_digi(self)
 
     def send_image_to_digi(self):
@@ -73,9 +73,16 @@ class ProductTemplate(models.Model):
         self.with_delay().send_image_to_digi_directly()
 
     def send_image_to_digi_directly(self):
+        client = self._get_digi_client()
+        if client:
+            client.send_product_image_to_digi(self)
+
+    def _get_digi_client(self):
         digi_client_id = int(
             self.env["ir.config_parameter"].get_param("digi_client_id")
         )
         client = self.env["product_digi_sync.digi_client"].browse(digi_client_id)
-        if client.exists():
-            client.send_product_image_to_digi(self)
+        if not client.exists():
+            _logger.warning("Digi client requested, but no client was configured.")
+            return False
+        return client
