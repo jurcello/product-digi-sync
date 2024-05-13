@@ -57,6 +57,16 @@ class ProductTemplate(models.Model):
             product_template.send_image_to_digi()
         return result
 
+    @api.model
+    def create(self, vals):
+        record = super().create(vals)
+
+        if record.plu_code:
+            record.send_to_digi()
+        record.send_image_to_digi()
+
+        return record
+
     def send_to_digi(self):
         self.ensure_one()
         self.with_delay().send_to_digi_directly()

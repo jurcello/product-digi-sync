@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class ProductCategory(models.Model):
@@ -23,6 +23,15 @@ class ProductCategory(models.Model):
                 record.send_to_digi()
         result = super().write(vals)
         return result
+
+    @api.model
+    def create(self, vals):
+        record = super().create(vals)
+
+        if record.external_digi_id:
+            record.send_to_digi()
+
+        return record
 
     def send_to_digi(self):
         self.with_delay().send_to_digi_directly()
