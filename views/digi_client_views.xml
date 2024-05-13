@@ -6,12 +6,10 @@
         <field name="arch" type="xml">
             <form string="Digi Client Form">
                 <sheet>
-                    <group>
-                        <field name="name" />
-                        <field name="username" />
-                        <field name="password" />
-                        <field name="api_url" widget="url" />
-                    </group>
+                    <field name="name" />
+                    <field name="username" />
+                    <field name="password" />
+                    <field name="api_url" widget="url" />
                 </sheet>
 
             </form>
@@ -34,7 +32,7 @@
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">product_digi_sync.digi_client</field>
         <field name="view_mode">tree,form</field>
-                <field name="help" type="html">
+        <field name="help" type="html">
             <p class="o_view_nocontent_empty_folder">
                 Click to create your first Digi Client.
             </p>
