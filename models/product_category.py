@@ -18,9 +18,10 @@ class ProductCategory(models.Model):
     ]
 
     def write(self, vals):
+        for record in self:
+            if record.external_digi_id:
+                record.send_to_digi()
         result = super().write(vals)
-        if self.external_digi_id:
-            self.send_to_digi()
         return result
 
     def send_to_digi(self):
