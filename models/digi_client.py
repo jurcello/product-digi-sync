@@ -15,11 +15,12 @@ class DigiClient(models.Model):
     _name = "product_digi_sync.digi_client"
     _description = "Digi Client"
 
-    FRESH_URL = "https://fresh.digi.eu:8010/API/V1"
+    DEFAULT_FRESH_URL = "https://fresh.digi.eu:8010/API/V1"
 
     name = fields.Char(required=True)
     username = fields.Char("@Fresh Username", required=True)
     password = fields.Char("@Fresh Password", required=True)
+    api_url = fields.Char(required=True, default=DEFAULT_FRESH_URL)
 
     def send_product_to_digi(self, product):
         url = self.create_article_url()
@@ -57,15 +58,18 @@ class DigiClient(models.Model):
             )
 
     def create_article_url(self):
-        url = f"{self.FRESH_URL}/ARTICLE.SVC/POST"
+        url = f"{self.get_api_url()}/ARTICLE.SVC/POST"
         return url
 
+    def get_api_url(self):
+        return self.api_url if self.api_url else self.DEFAULT_FRESH_URL
+
     def create_image_url(self):
-        url = f"{self.FRESH_URL}/MultiMedia.SVC/POST"
+        url = f"{self.get_api_url()}/MultiMedia.SVC/POST"
         return url
 
     def create_category_url(self):
-        url = f"{self.FRESH_URL}/MAINGROUP.SVC/POST"
+        url = f"{self.get_api_url()}/MAINGROUP.SVC/POST"
         return url
 
     def create_header(self):

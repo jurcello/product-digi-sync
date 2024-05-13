@@ -10,6 +10,7 @@
                         <field name="name" />
                         <field name="username" />
                         <field name="password" />
+                        <field name="api_url" widget="url" />
                     </group>
                 </sheet>
 
