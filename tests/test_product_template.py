@@ -26,9 +26,14 @@ class ProductTemplateTestCase(TransactionCase):
         self.patcher.stop()
 
     def test_it_sends_the_product_to_digi_when_plu_code_is_set(self):
-        product = self.env["product.template"].create(
+        product1 = self.env["product.template"].create(
             {"name": "Test Product Template", "plu_code": 405}
         )
+        product2 = self.env["product.template"].create(
+            {"name": "Test Product without ply"}
+        )
+
+        products = self.env["product.template"].browse([product1.id, product2.id])
 
         digi_client = self.env["product_digi_sync.digi_client"].create(
             {
@@ -45,13 +50,13 @@ class ProductTemplateTestCase(TransactionCase):
         ).start()
         patch.object(DigiClient, "send_product_image_to_digi", Mock()).start()
 
-        product.write(
+        products.write(
             {
                 "name": "Test Product Template",
             }
         )
 
-        self.assertEqual(mock_send_product_to_digi.call_args[0][0], product)
+        self.assertEqual(mock_send_product_to_digi.call_args[0][0], product1)
 
     def test_it_sends_the_product_image_to_digi_when_the_image_is_set(self):
         digi_client = self.env["product_digi_sync.digi_client"].create(

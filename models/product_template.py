@@ -16,7 +16,7 @@ class ProductTemplate(models.Model):
                 pattern = record.categ_id.barcode_rule_id.pattern
 
                 is_ean = record.categ_id.barcode_rule_id.encoding == "ean13"
-                # Add barcode to vals
+
                 record.barcode = record._prepare_barcode(
                     pattern, record.plu_code, is_ean
                 )
@@ -48,12 +48,14 @@ class ProductTemplate(models.Model):
 
     def write(self, vals):
         result = super().write(vals)
-        if self.plu_code:
-            self.send_to_digi()
-        self.send_image_to_digi()
+        for product_template in self:
+            if product_template.plu_code:
+                product_template.send_to_digi()
+            product_template.send_image_to_digi()
         return result
 
     def send_to_digi(self):
+        self.ensure_one()
         self.with_delay().send_to_digi_directly()
 
     def send_to_digi_directly(self):
@@ -65,6 +67,7 @@ class ProductTemplate(models.Model):
             client.send_product_to_digi(self)
 
     def send_image_to_digi(self):
+        self.ensure_one()
         if not self.image_1920:
             return
         self.with_delay().send_image_to_digi_directly()
