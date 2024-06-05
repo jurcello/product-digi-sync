@@ -4,6 +4,8 @@ import re
 from odoo import api, fields, models
 from odoo.tools import get_barcode_check_digit
 
+from odoo.addons.queue_job.exception import RetryableJobError
+
 _logger = logging.getLogger(__name__)
 
 
@@ -74,7 +76,10 @@ class ProductTemplate(models.Model):
     def send_to_digi_directly(self):
         client = self._get_digi_client()
         if client:
-            client.send_product_to_digi(self)
+            try:
+                client.send_product_to_digi(self)
+            except Exception as e:
+                raise RetryableJobError(str(e), 5) from e
 
     def send_image_to_digi(self):
         self.ensure_one()
@@ -85,7 +90,10 @@ class ProductTemplate(models.Model):
     def send_image_to_digi_directly(self):
         client = self._get_digi_client()
         if client:
-            client.send_product_image_to_digi(self)
+            try:
+                client.send_product_image_to_digi(self)
+            except Exception as e:
+                raise RetryableJobError(str(e), 5) from e
 
     def _get_digi_client(self):
         digi_client_id = int(
